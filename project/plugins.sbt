@@ -1,4 +1,4 @@
-val playVersion = "2.3.8"
+val playVersion = "2.4.3"
 
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
