@@ -4,13 +4,14 @@ import models.{LoginException, LoginForm}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc._
+import repositories.Users
 
 import scala.util.{Failure, Try}
 
 object Application extends Controller {
 
     val loginForm: Form[LoginForm] = Form(
-        mapping("login" -> nonEmptyText, "password" -> text)(LoginForm.apply)(LoginForm.unapply)
+        mapping("login" -> text, "password" -> text)(LoginForm.apply)(LoginForm.unapply)
     )
 
     def attemptLogin(request: Request[AnyContent], loginData: LoginForm): Try[String] = {
@@ -38,5 +39,10 @@ object Application extends Controller {
                 result
             }
         )
+    }
+
+    def dbtest = Action { implicit request =>
+        Users.getUser
+        Ok(views.html.dbtest(""))
     }
 }
