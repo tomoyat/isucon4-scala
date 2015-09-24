@@ -2,15 +2,23 @@ package controllers
 
 import java.time.format.DateTimeFormatter
 
-import models.{DisplayUser, UserUtil, LoginException, LoginForm}
+import models._
 import play.api.data.Form
 import play.api.data.Forms._
+import play.api.libs.json.{Json, Writes}
 import play.api.mvc._
 import repositories.{LoginLogs, Users}
 
 import scala.util.{Success, Failure, Try}
 
 object Application extends Controller {
+
+    implicit val reportWrites = new Writes[Report] {
+        def writes(report: Report) = Json.obj(
+            "banned_ips" -> report.bannedIps,
+            "locked_users" -> report.lockedUsers
+        )
+    }
 
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     val loginForm: Form[LoginForm] = Form(
@@ -52,5 +60,16 @@ object Application extends Controller {
                 }
             }
         }
+    }
+
+    def report = Action { implicit request =>
+        val ipList = LoginLogUtil.getBannedIPs
+        val lockedNameList = LoginLogUtil.getLockedUserNames
+        val report = Report(
+            ipList,
+            lockedNameList
+        )
+        val jsonResponse = Json.toJson(report)
+        Ok(jsonResponse)
     }
 }

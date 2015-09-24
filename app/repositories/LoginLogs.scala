@@ -2,7 +2,7 @@ package repositories
 
 import java.time.{ZoneId, ZonedDateTime}
 
-import models.{LoginLog, User}
+import models._
 import scalikejdbc.{AutoSession, WrappedResultSet, SQL}
 
 import scala.util.{Success, Failure, Try}
@@ -21,6 +21,18 @@ object LoginLogs {
         ip = rs.string("ip"),
         succeeded = rs.int("succeeded")
     )
+
+    val lastLoginIPMapping = (rs: WrappedResultSet) => LastLoginIP(
+        ip = rs.string("ip"),
+        lastLoginId = rs.long("last_login_id")
+    )
+
+    val lastLoginNameMapping = (rs: WrappedResultSet) => LastLoginName(
+        userId = rs.int("user_id"),
+        login = rs.string("login"),
+        lastLoginId = rs.long("last_login_id")
+    )
+
 
     def update(user: Option[User], login: String, ip: String, succeeded: Int): Unit = {
         val insertSQL = SQL("INSERT INTO login_log (`created_at`, `user_id`, `login`, `ip`, `succeeded`) VALUES (?,?,?,?,?)")
@@ -65,6 +77,53 @@ object LoginLogs {
             " AND succeeded = 1 ORDER BY id DESC LIMIT 1), 0)")
 
         sql.bind(id, id).map(rs => rs.int("failures")).single.apply() match {
+            case None => 0
+            case Some(x) => x
+        }
+    }
+
+    def getBannedIPList(threshold: Int): List[String] = {
+        val sql = SQL("SELECT ip FROM " +
+            " (SELECT ip, MAX(succeeded) as max_succeeded, COUNT(1) as cnt FROM login_log GROUP BY ip) AS t0 " +
+            " WHERE t0.max_succeeded = 0 AND t0.cnt >= ?")
+
+        sql.bind(threshold).map(rs => rs.string("ip")).list.apply()
+    }
+
+    def getLastLoginIPList: List[LastLoginIP] = {
+        val sql = SQL("SELECT ip, MAX(id) AS last_login_id FROM login_log WHERE succeeded = 1 GROUP by ip")
+        
+        sql.map(lastLoginIPMapping).list.apply()
+    }
+
+    def getFailuresIPCountByLastLogin(lastLoginIP: LastLoginIP): Int = {
+        val sql = SQL("SELECT COUNT(1) AS cnt FROM login_log WHERE ip = ? AND ? < id")
+
+        sql.bind(lastLoginIP.ip, lastLoginIP.lastLoginId).map(rs => rs.int("cnt")).single.apply() match {
+            case None => 0
+            case Some(x) => x
+        }
+    }
+
+    def getLockedUserNameList(threshold: Int): List[String] = {
+        val sql = SQL("SELECT user_id, login FROM " +
+            " (SELECT user_id, login, MAX(succeeded) as max_succeeded, COUNT(1) as cnt FROM login_log GROUP BY user_id) AS t0 " +
+            " WHERE t0.user_id IS NOT NULL AND t0.max_succeeded = 0 AND t0.cnt >= ?")
+
+        sql.bind(threshold).map(rs => rs.string("login")).list.apply()
+    }
+
+    def getLastLoginNameList: List[LastLoginName] = {
+        val sql = SQL("SELECT user_id, login, MAX(id) AS last_login_id FROM login_log WHERE user_id IS NOT NULL AND succeeded = 1 GROUP BY user_id")
+
+        sql.map(lastLoginNameMapping).list.apply()
+    }
+
+
+    def getFailuresNameCountByLastLoginName(lastLoginName: LastLoginName): Int = {
+        val sql = SQL("SELECT COUNT(1) AS cnt FROM login_log WHERE user_id = ? AND ? < id")
+
+        sql.bind(lastLoginName.userId, lastLoginName.lastLoginId).map(rs => rs.int("cnt")).single.apply() match {
             case None => 0
             case Some(x) => x
         }

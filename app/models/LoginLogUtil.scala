@@ -27,4 +27,33 @@ object LoginLogUtil {
             }
         }
     }
+
+    def getBannedIPs: List[String] = {
+        var ipList = LoginLogs.getBannedIPList(ipBanThreshold)
+
+        val lastLoginList = LoginLogs.getLastLoginIPList
+
+        for (lastLogin <- lastLoginList) {
+            val cnt = LoginLogs.getFailuresIPCountByLastLogin(lastLogin)
+            if (ipBanThreshold <= cnt) {
+                ipList = ipList ::: List(lastLogin.ip)
+            }
+        }
+        ipList
+    }
+
+    def getLockedUserNames: List[String] = {
+
+        var nameList = LoginLogs.getLockedUserNameList(userLockThreshold)
+
+        val lastLoginList = LoginLogs.getLastLoginNameList
+
+        for (lastLogin <- lastLoginList) {
+            val cnt = LoginLogs.getFailuresNameCountByLastLoginName(lastLogin)
+            if (userLockThreshold <= cnt) {
+                nameList = nameList ::: List(lastLogin.login)
+            }
+        }
+        nameList
+    }
 }

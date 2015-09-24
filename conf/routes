@@ -6,6 +6,8 @@
 GET         /                         controllers.Application.index
 POST        /login                    controllers.Application.login
 GET         /mypage                   controllers.Application.mypage
+GET         /report                   controllers.Application.report
+
 # Map static resources from the /public folder to the /assets URL path
 GET         /images/*file             controllers.Assets.at(path="/public/images", file)
 GET         /stylesheets/*file        controllers.Assets.at(path="/public/stylesheets", file)
