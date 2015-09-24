@@ -18,6 +18,10 @@ object UserUtil {
         }
 
         // check user locked
+        if (LoginLogUtil.isLocked(user)) {
+            LoginLogs.update(user, login, ip, 0)
+            return Failure(LoginException("This account is locked."))
+        }
 
         // check password
         val result = user match {

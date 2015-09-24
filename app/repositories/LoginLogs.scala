@@ -58,4 +58,15 @@ object LoginLogs {
             case Some(x) => x
         }
     }
+
+    def getFailuresCountById(id: Int): Int = {
+        val sql = SQL("SELECT COUNT(1) AS failures FROM login_log WHERE " +
+            " user_id = ? AND id > IFNULL((select id from login_log where user_id = ? " +
+            " AND succeeded = 1 ORDER BY id DESC LIMIT 1), 0)")
+
+        sql.bind(id, id).map(rs => rs.int("failures")).single.apply() match {
+            case None => 0
+            case Some(x) => x
+        }
+    }
 }
