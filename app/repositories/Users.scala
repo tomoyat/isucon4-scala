@@ -6,7 +6,7 @@ object Users {
     implicit val session = AutoSession
 
     val userMapping = (rs: WrappedResultSet) => User(
-        id = rs.long("id"),
+        id = rs.int("id"),
         login = rs.string("login"),
         password_hash = rs.string("password_hash"),
         salt = rs.string("salt")
@@ -19,5 +19,9 @@ object Users {
             return None
         }
         Some(result.head)
+    }
+
+    def getUserById(id: Int): Option[User] = {
+        SQL("select * from users where id = ?").bind(id).map(userMapping).single.apply()
     }
 }

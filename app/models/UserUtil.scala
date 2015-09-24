@@ -1,6 +1,6 @@
 package models
 
-import repositories.Users
+import repositories.{LoginLogs, Users}
 
 import scala.util.{Try, Success, Failure}
 
@@ -12,6 +12,7 @@ object UserUtil {
         val user = Users.getUserByLogin(login)
 
         // check ip banned
+
 
         // check user locked
 
@@ -28,8 +29,8 @@ object UserUtil {
                 }
         }
 
+        LoginLogs.update(user, login, ip, result)
         // update status
         result
     }
-
 }

@@ -7,5 +7,6 @@ lazy val root = (project in file(".")).
         libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "2.2.8",
         libraryDependencies += "org.scalikejdbc" %% "scalikejdbc-config" % "2.2.8",
         libraryDependencies += "org.scalikejdbc" %% "scalikejdbc-play-initializer" % "2.4.1",
+        libraryDependencies += "org.scalikejdbc" %% "scalikejdbc-jsr310" % "2.2.+",
         libraryDependencies ++= Seq(jdbc, cache, ws)
     ).enablePlugins(PlayScala)

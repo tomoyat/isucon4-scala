@@ -1,15 +1,18 @@
 package controllers
 
-import models.{UserUtil, LoginException, LoginForm}
+import java.time.format.DateTimeFormatter
+
+import models.{DisplayUser, UserUtil, LoginException, LoginForm}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc._
-import repositories.Users
+import repositories.{LoginLogs, Users}
 
 import scala.util.{Success, Failure, Try}
 
 object Application extends Controller {
 
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     val loginForm: Form[LoginForm] = Form(
         mapping("login" -> text, "password" -> text)(LoginForm.apply)(LoginForm.unapply)
     )
@@ -40,7 +43,14 @@ object Application extends Controller {
     def mypage = Action { implicit request =>
         request.session.get("userId") match {
             case None => Redirect("/").flashing("notice" -> "You must be logged in")
-            case _ => Ok(views.html.mypage())
+            case Some(id) => Users.getUserById(id.toInt) match {
+                case None => Redirect("/").flashing("notice" -> "You must be logged in")
+                case Some(user) => {
+                    val lastLogin = LoginLogs.getLastLoginById(user.id)
+                    Ok(views.html.mypage(DisplayUser(lastLogin.login, lastLogin.ip,
+                    lastLogin.created_at.format(formatter))))
+                }
+            }
         }
     }
 }
