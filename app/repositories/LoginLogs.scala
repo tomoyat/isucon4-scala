@@ -22,7 +22,7 @@ object LoginLogs {
         succeeded = rs.int("succeeded")
     )
 
-    def update(user: Option[User], login: String, ip: String, succeeded: Try[String]) {
+    def update(user: Option[User], login: String, ip: String, succeeded: Int): Unit = {
         val insertSQL = SQL("INSERT INTO login_log (`created_at`, `user_id`, `login`, `ip`, `succeeded`) VALUES (?,?,?,?,?)")
         val createdAt = ZonedDateTime.now(zoneId)
 
@@ -30,11 +30,15 @@ object LoginLogs {
             case None => None
             case Some(u) => Some(u.id)
         }
+        insertSQL.bind(createdAt, userId, login, ip, succeeded).update.apply()
+    }
+
+    def update(user: Option[User], login: String, ip: String, succeeded: Try[String]) {
         val succeededVal: Int = succeeded match {
-            case Success(x) => 1
+            case Success(s) => 1
             case _ => 0
         }
-        insertSQL.bind(createdAt, userId, login, ip, succeededVal).update.apply()
+        update(user, login, ip, succeededVal)
     }
 
     def getLastLoginById(id: Int): LoginLog = {
@@ -42,5 +46,16 @@ object LoginLogs {
         val logs: List[LoginLog] = sql.bind(id).map(loginLogMapping).list.apply()
 
         logs.last
+    }
+
+    def getFailuresCountByIp(ip: String): Int = {
+        val sql = SQL("SELECT COUNT(1) AS failures FROM login_log WHERE " +
+            "ip = ? AND id > IFNULL((select id from login_log where ip = ? AND " +
+            "succeeded = 1 ORDER BY id DESC LIMIT 1), 0)")
+
+        sql.bind(ip, ip).map(rs => rs.int("failures")).single.apply() match {
+            case None => 0
+            case Some(x) => x
+        }
     }
 }

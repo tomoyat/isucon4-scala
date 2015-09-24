@@ -12,7 +12,10 @@ object UserUtil {
         val user = Users.getUserByLogin(login)
 
         // check ip banned
-
+        if (LoginLogUtil.isIPBanned(ip)) {
+            LoginLogs.update(user, login, ip, 0)
+            return Failure(LoginException("You're banned."))
+        }
 
         // check user locked
 
